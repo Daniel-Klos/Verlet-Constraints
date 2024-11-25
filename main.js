@@ -1,8 +1,12 @@
+// To do:
+  // make radius and mass of circles adjustable
+
+
 let WIDTH = 900;
 let HEIGHT = 490;
 let gravity = 8; //8, 35
 let radius = 8;
-let friction = 0.6;
+let friction = 0.9;
 let subStep = 10; //10, 4
 let minCellSize = WIDTH;
 let numBalls = 0;
@@ -92,7 +96,7 @@ function setup() {
   
   fill(0, 255, 0);
   
-  // useless, only would be good for if balls had differing radius
+  
   for (let ball of balls) {
     ball.maxSearchDist = ball.radius / (minCellSize / 1.5);
     if (ball.maxSearchDist != int(ball.maxSearchDist)) {
@@ -764,6 +768,7 @@ function sign(x) {
   return 1;
 }
 
+
 function draw() {
   if (!area && !takeOutSelecting) {
     if (mouseY > HEIGHT - radius) {
@@ -781,12 +786,15 @@ function draw() {
     }
   }
   
+  
   background(40);
+  
   
   let dt = deltaTime / 1000;
   if (dt > 2 * dt_prev && dt_prev != 0.1) {
     dt = dt_prev;
   }
+  
   
   dt_prev = dt; 
   //stroke(0, 255, 0);
@@ -1165,6 +1173,7 @@ class VerletBall {
     this.maxSearchDist = 0;
     this.collisionCount = 0;
     this.keepFixedPoint = false;
+    
   }
   
   displayCircle() {
@@ -1247,8 +1256,10 @@ class VerletBall {
     this.forceX += this.springFX;
     this.forceY += this.springFY;
       
-    this.x_pos += (xVel + this.forceX * dt * dt);
-    this.y_pos += (yVel + this.forceY * dt * dt);
+    let damping = 1;
+    
+    this.x_pos += (xVel + (this.forceX - xVel * damping) * (dt * dt));
+    this.y_pos += (yVel + (this.forceY - yVel * damping) * (dt * dt));
     
     this.springFX = 0;
     this.springFY = 0;
@@ -1467,6 +1478,50 @@ class VerletBall {
     if (!this.fixedPoint) {
       this.x_pos += normalX * depth;
       this.y_pos += normalY * depth;
+      
+      // calculate friction and friction based on relative velocity
+      // ------------------------------------------------
+      const friction = Math.pow(0.999, this.connections.size + 1);
+      const relFriction = 0.001 + this.connections.size * 0.001;
+      const dx = closest_ball.x_pos - furthest_ball.x_pos;
+      const dy = closest_ball.y_pos - furthest_ball.y_pos;
+      const magnitude = Math.sqrt(dx * dx + dy * dy);
+      const tangentX = dx / magnitude;
+      const tangentY = dy / magnitude;
+
+      const velocityX = this.x_pos - this.oldX;
+      const velocityY = this.y_pos - this.oldY;
+      
+      const lineVelX = ((closest_ball.x_pos - closest_ball.oldX) + (furthest_ball.x_pos - furthest_ball.oldX)) / 2;
+      const lineVelY = ((closest_ball.y_pos - closest_ball.oldY) + (furthest_ball.y_pos - furthest_ball.oldY)) / 2;
+      
+      this.oldX = this.x_pos;
+      this.oldY = this.y_pos;
+  
+      if (abs(lineVelX) > 0 || abs(lineVelY > 0)) {
+
+        const relativeVelX = lineVelX - velocityX;
+        const relativeVelY = lineVelY - velocityY;
+
+      
+        const relativeTangentVelocity = (relativeVelX * tangentX) + (relativeVelY * tangentY);
+        const reducedRelativeTangentVelocity = relativeTangentVelocity * (relFriction);
+        
+        this.oldX -= reducedRelativeTangentVelocity * tangentX;
+        this.oldY -= reducedRelativeTangentVelocity * tangentY;
+      }
+    
+      const tangentVelocity = (velocityX * tangentX) + (velocityY * tangentY);
+      const reducedTangentVelocity = tangentVelocity * (friction);
+      
+
+      this.oldX -= reducedTangentVelocity * tangentX;
+      this.oldY -= reducedTangentVelocity * tangentY;
+      // ---------------------------------------------
+      
+      const maxDepth = Math.min(0.6, Math.abs(depth));
+      this.oldY -= normalY * maxDepth;
+      this.oldX -= normalX * maxDepth;
     }
     if (!(closest_ball.fixedPoint)) {
       if (stretched_length > 0) {
@@ -1808,4 +1863,3 @@ class SpatialHash2D {
     let y = yi * this.spacing;
     return [x, y];
   }
-}
