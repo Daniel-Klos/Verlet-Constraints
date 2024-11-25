@@ -308,6 +308,7 @@ function areadragClicked() {
       selected = []
     }
     else {
+      generatingNewPoint = false;
       areaButton.style('background-color', color(255, 255, 255));
       dragButton.style('background-color', color(255, 0, 0));
     }
@@ -1038,7 +1039,6 @@ function draw() {
   }
   
   if (circleDrawing) {
-    text('Number of Nodes:', 680, 50);
     if (mouseDown) {
       widthX = mouseX;
       heightY = mouseY;
