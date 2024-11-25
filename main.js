@@ -1,7 +1,3 @@
-// To do:
-  // make radius and mass of circles adjustable
-
-
 let WIDTH = 900;
 let HEIGHT = 490;
 let gravity = 8; //8, 35
