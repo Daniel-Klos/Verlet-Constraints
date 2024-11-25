@@ -299,6 +299,7 @@ function selectClicked() {
 }
 
 function areadragClicked() {
+  generatingNewPoint = false;
   if (!selecting && !rope && !takeOutSelecting) {
     area = !area;
     drag = !drag;
@@ -308,7 +309,6 @@ function areadragClicked() {
       selected = []
     }
     else {
-      generatingNewPoint = false;
       areaButton.style('background-color', color(255, 255, 255));
       dragButton.style('background-color', color(255, 0, 0));
     }
@@ -1806,27 +1806,39 @@ class SpatialHash2D {
     stroke(0, 0, 0);
   }
   
-  ballQuery(ball) {
-    this.queryIDs = [];
-    for (let i = -1; i < 2; i++) {
-      for (let j = Math.max(-1, -int(Math.min(2, int(ball.y_pos / this.spacing)))); j < int(Math.min(2, this.nY - int(ball.y_pos / this.spacing))); j++) {
-        let index1 = int(this.getCell(ball.getX() + i * this.spacing, ball.getY() + j * this.spacing));
-        let index2 = index1 + 1;
-        if (index1 >= 0 && index1 < this.cellCount.length && index2 > 0 && index2 < this.cellCount.length) {
-          if (lastSubStep && (this.viewSH || pause)) {
-            let cellCoord = spatialHash.getCellCoords(index1);
-            rect(cellCoord[0], cellCoord[1], this.spacing, this.spacing);
-          }
-          if (this.cellCount[index2] - this.cellCount[index1] > 0) {
-            let particleIndex = this.cellCount[index1];
-            for (let p = 0; p < this.cellCount[index2] - this.cellCount[index1]; p++) {
-              this.queryIDs.push(this.particleArray[particleIndex]);
-              particleIndex++;
-            }
-          }
+  checkBallCollisions(ball, i, j) {
+    let index1 = int(this.getCell(ball.getX() + i * this.spacing, ball.getY() + j * this.spacing));
+    let index2 = index1 + 1;
+    if (index1 >= 0 && index1 < this.cellCount.length && index2 > 0 && index2 < this.cellCount.length) {
+      if (lastSubStep && (this.viewSH || pause)) {
+        let cellCoord = spatialHash.getCellCoords(index1);
+        rect(cellCoord[0], cellCoord[1], this.spacing, this.spacing);
+      }
+      if (this.cellCount[index2] - this.cellCount[index1] > 0) {
+        let particleIndex = this.cellCount[index1];
+        for (let p = 0; p < this.cellCount[index2] - this.cellCount[index1]; p++) {
+          this.queryIDs.push(this.particleArray[particleIndex]);
+          particleIndex++;
         }
       }
     }
+  }
+  
+  ballQuery(ball) {
+    this.queryIDs = [];
+    const topBound = Math.max(-1, -int(Math.min(2, int(ball.y_pos / this.spacing))));
+    const bottomBound = int(Math.min(2, this.nY - int(ball.y_pos / this.spacing)));
+
+    for (let j = topBound; j < bottomBound; j++) {
+      this.checkBallCollisions(ball, 0, j);
+    }
+    for (let j = topBound; j < bottomBound; j++) {
+      this.checkBallCollisions(ball, -1, j);
+    }
+    for (let j = topBound; j < bottomBound; j++) {
+      this.checkBallCollisions(ball, 1, j);
+    }
+    
     return this.queryIDs;
   }
   
